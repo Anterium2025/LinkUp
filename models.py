@@ -49,3 +49,66 @@ followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
                     )
+        flash('Registration successful. Please log in.')
+        return redirect(url_for('login'))
+    return render_template('register.html', form=form, title='Register')
+
+
+@app.route('/login', methods=('GET', 'POST'))
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        user = User.query.filter_by(username=username).first()
+        if user is None or user.password != password:  # NEVER compare plain text passwords in real life.
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        else:
+            global logged_in_user
+            logged_in_user = username
+            return redirect(url_for('index'))
+    return render_template('login.html', form=form, title='Login')
+
+
+@app.route('/logout')
+def logout():
+    global logged_in_user
+    logged_in_user = None
+    return redirect(url_for('login'))
+
+
+@app.route('/follow/<username>')
+@login_required
+def follow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('User {} not found.'.format(username))
+        return redirect(url_for('index'))
+    if user == g.user:
+        flash('You cannot follow yourself!')
+        return redirect(url_for('index'))
+    g.user.follow(user)
+    db.session.commit()
+    flash('You are now following {}!'.format(username))
+    return redirect(url_for('index'))
+
+
+@app.route('/unfollow/<username>')
+@login_required
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('User {} not found.'.format(username))
+        return redirect(url_for('index'))
+    if user == g.user:
+        flash('You cannot unfollow yourself!')
+        return redirect(url_for('index'))
+    g.user.unfollow(user)
+    db.session.commit()
+    flash('You are no longer following {}!'.format(username))
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
