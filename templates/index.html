@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h1>Hello, {% if g.user %}{{ g.user.username }}{% else %}Guest{% endif %}!</h1>
+
+    <h2>Create a Post</h2>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.body.label }}<br>
+            {{ form.body(cols=32, rows=4) }}<br>
+            {% for error in form.body.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+
+    <h2>Your Feed</h2>
+    {% for post in posts %}
+    <p>
+        {{ post.author.username }} says: <b>{{ post.body }}</b>
+    </p>
+    {% endfor %}
+
+    <h2>Users to Follow</h2>
+    {% for user in User.query.all() %}
+        {% if user != g.user %}
+            <p>
+                {{ user.username }}
+                {% if g.user.is_following(user) %}
+                    <a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a>
+                {% else %}
+                    <a href="{{ url_for('follow', username=user.username) }}">Follow</a>
+                {% endif %}
+            </p>
+        {% endif %}
+    {% endfor %}
+{% endblock %}
